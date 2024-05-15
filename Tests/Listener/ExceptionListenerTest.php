@@ -24,7 +24,7 @@ use Symfony\Component\HttpKernel\HttpKernelInterface;
 
 class ExceptionListenerTest extends TestCase
 {
-    public function testOnKernelException()
+    public function testOnKernelException(): void
     {
         $exception = new \Exception('Boom');
 
@@ -41,7 +41,7 @@ class ExceptionListenerTest extends TestCase
         $listener->onKernelException($event);
     }
 
-    public function testOnKernelExceptionWithHttp()
+    public function testOnKernelExceptionWithHttp(): void
     {
         $exception = new BadRequestHttpException('Boom');
 

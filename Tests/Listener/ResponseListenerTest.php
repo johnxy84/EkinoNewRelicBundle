@@ -18,14 +18,21 @@ use Ekino\NewRelicBundle\NewRelic\Config;
 use Ekino\NewRelicBundle\NewRelic\NewRelicInteractorInterface;
 use Ekino\NewRelicBundle\Twig\NewRelicExtension;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 
 class ResponseListenerTest extends TestCase
 {
+    private NewRelicInteractorInterface $interactor;
+
+    private Config $newRelic;
+
+    private NewRelicExtension $extension;
+
     protected function setUp(): void
     {
         $this->interactor = $this->getMockBuilder(NewRelicInteractorInterface::class)->getMock();
@@ -39,7 +46,7 @@ class ResponseListenerTest extends TestCase
             ->getMock();
     }
 
-    public function testOnKernelResponseOnlyMasterRequestsAreProcessed()
+    public function testOnKernelResponseOnlyMasterRequestsAreProcessed(): void
     {
         $event = $this->createFilterResponseEventDummy(null, null, HttpKernelInterface::SUB_REQUEST);
 
@@ -261,19 +268,19 @@ class ResponseListenerTest extends TestCase
         $mock = $this->getMockBuilder(Request::class)
             ->setMethods(['get'])
             ->getMock();
-        $mock->attributes = $mock;
+        $mock->attributes = new ParameterBag(['_instrument' => $instrumentEnabled]);
 
         $mock->expects($this->any())->method('get')->willReturn($instrumentEnabled);
 
         return $mock;
     }
 
-    private function createResponseMock($content = null, $expectsSetContent = null, $contentType = 'text/html')
+    private function createResponseMock($content = null, $expectsSetContent = null, $contentType = 'text/html'): Response
     {
         $mock = $this->getMockBuilder(Response::class)
             ->setMethods(['get', 'getContent', 'setContent'])
             ->getMock();
-        $mock->headers = $mock;
+        $mock->headers = new ResponseHeaderBag(['Content-Type' => $contentType]);
 
         $mock->expects($this->any())->method('get')->willReturn($contentType);
         $mock->expects($content ? $this->any() : $this->never())->method('getContent')->willReturn($content ?? false);
@@ -287,13 +294,10 @@ class ResponseListenerTest extends TestCase
         return $mock;
     }
 
-    private function createFilterResponseEventDummy(Request $request = null, Response $response = null, int $requestType = HttpKernelInterface::MASTER_REQUEST)
+    private function createFilterResponseEventDummy(Request $request = null, Response $response = null, int $requestType = HttpKernelInterface::MAIN_REQUEST): ResponseEvent
     {
         $kernel = $this->getMockBuilder(HttpKernelInterface::class)->getMock();
 
-        $eventClass = class_exists(ResponseEvent::class) ? ResponseEvent::class : FilterResponseEvent::class;
-        $event = new $eventClass($kernel, $request ?? new Request(), $requestType, $response ?? new Response());
-
-        return $event;
+        return new ResponseEvent($kernel, $request ?? new Request(), $requestType, $response ?? new Response());
     }
 }

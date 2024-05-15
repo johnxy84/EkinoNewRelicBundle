@@ -39,12 +39,9 @@ class ExceptionListener implements EventSubscriberInterface
         ];
     }
 
-    /**
-     * @param GetResponseForExceptionEvent|ExceptionEvent $event
-     */
     public function onKernelException(KernelExceptionEvent $event): void
     {
-        $exception = method_exists($event, 'getThrowable') ? $event->getThrowable() : $event->getException();
+        $exception = $event->getThrowable();
         if (!$exception instanceof HttpExceptionInterface) {
             $this->interactor->noticeThrowable($exception);
         }
@@ -52,9 +49,5 @@ class ExceptionListener implements EventSubscriberInterface
 }
 
 if (!class_exists(KernelExceptionEvent::class)) {
-    if (class_exists(ExceptionEvent::class)) {
-        class_alias(ExceptionEvent::class, KernelExceptionEvent::class);
-    } else {
-        class_alias(GetResponseForExceptionEvent::class, KernelExceptionEvent::class);
-    }
+    class_alias(ExceptionEvent::class, KernelExceptionEvent::class);
 }
